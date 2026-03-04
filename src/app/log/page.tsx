@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
     Bot,
     Heart,
@@ -8,10 +8,12 @@ import {
     ArrowRight,
     Sparkles,
     ChevronDown,
+    Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore, type ChatMessage, type ChatHistory } from "@/store";
 import { useHydrated } from "@/store/useHydrated";
+import { useChatSimulation } from "@/store/simulation";
 
 /* ── Intimacy Ring Component ── */
 
@@ -40,6 +42,7 @@ function IntimacyGauge({
                     className="w-full h-full -rotate-90"
                     viewBox="0 0 100 100"
                 >
+                    {/* bg track */}
                     <circle
                         cx="50"
                         cy="50"
@@ -48,6 +51,7 @@ function IntimacyGauge({
                         stroke="oklch(1 0 0 / 6%)"
                         strokeWidth={stroke}
                     />
+                    {/* progress arc */}
                     <circle
                         cx="50"
                         cy="50"
@@ -68,14 +72,8 @@ function IntimacyGauge({
                             x2="100%"
                             y2="100%"
                         >
-                            <stop
-                                offset="0%"
-                                stopColor="oklch(0.65 0.25 300)"
-                            />
-                            <stop
-                                offset="100%"
-                                stopColor="oklch(0.62 0.19 250)"
-                            />
+                            <stop offset="0%" stopColor="oklch(0.65 0.25 300)" />
+                            <stop offset="100%" stopColor="oklch(0.62 0.19 250)" />
                         </linearGradient>
                     </defs>
                 </svg>
@@ -102,9 +100,9 @@ function IntimacyGauge({
     );
 }
 
-/* ── Swipe-to-Takeover Button ── */
+/* ── Swipe-to-Takeover Button (Male) ── */
 
-function TakeoverButton() {
+function TakeoverButton({ onComplete }: { onComplete: () => void }) {
     const [dragX, setDragX] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
@@ -138,6 +136,7 @@ function TakeoverButton() {
         if (dragX / trackWidthRef.current >= threshold) {
             setDragX(trackWidthRef.current);
             setIsComplete(true);
+            onComplete();
         } else {
             setDragX(0);
         }
@@ -148,6 +147,7 @@ function TakeoverButton() {
             ref={trackRef}
             className="relative h-14 rounded-2xl border border-border bg-card overflow-hidden select-none touch-none"
         >
+            {/* Background fill */}
             <div
                 className="absolute inset-y-0 left-0 rounded-2xl transition-colors duration-200"
                 style={{
@@ -158,6 +158,7 @@ function TakeoverButton() {
                 }}
             />
 
+            {/* Label */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <span
                     className={cn(
@@ -169,10 +170,11 @@ function TakeoverButton() {
                 >
                     {isComplete
                         ? "✓ TAKEOVER 完了"
-                        : "スワイプして TAKEOVER →"}
+                        : "スワイプして TAKEOVER (¥500) →"}
                 </span>
             </div>
 
+            {/* Draggable thumb */}
             <div
                 className={cn(
                     "absolute top-1.5 left-1.5 w-11 h-11 rounded-xl flex items-center justify-center cursor-grab",
@@ -205,6 +207,106 @@ function TakeoverButton() {
                     )}
                 />
             </div>
+        </div>
+    );
+}
+
+/* ── Chat Input Form ── */
+
+function ChatInputForm({ partnerName }: { partnerName: string }) {
+    const [text, setText] = useState("");
+    const addMessage = useAppStore((s) => s.addMessage);
+
+    const handleSend = () => {
+        if (!text.trim()) return;
+        const now = new Date();
+        addMessage("sato", {
+            sender: "mine",
+            agentName: "あなた",
+            text: text.trim(),
+            annotation: "※ あなた自身のメッセージです",
+            time: `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`,
+        });
+        setText("");
+    };
+
+    return (
+        <div className="tp-fade-slide-in flex items-end gap-2 rounded-2xl border border-border bg-card p-3">
+            <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                    }
+                }}
+                placeholder={`${partnerName}にメッセージを送信...`}
+                rows={1}
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[36px] max-h-[120px] py-2"
+            />
+            <button
+                onClick={handleSend}
+                disabled={!text.trim()}
+                className="shrink-0 w-9 h-9 rounded-xl bg-tp-accent text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:brightness-110 transition-all"
+            >
+                <Send className="w-4 h-4" />
+            </button>
+        </div>
+    );
+}
+
+/* ── Toast Notification ── */
+
+function TakeoverToast({ partnerName, onDone }: { partnerName: string; onDone: () => void }) {
+    useEffect(() => {
+        const timer = setTimeout(onDone, 4200);
+        return () => clearTimeout(timer);
+    }, [onDone]);
+
+    return (
+        <div className="fixed top-1/2 right-4 z-[9999] tp-toast">
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-emerald-500/90 backdrop-blur-lg shadow-xl shadow-emerald-500/20 border border-emerald-400/30">
+                <Sparkles className="w-4 h-4 text-white shrink-0" />
+                <span className="text-sm font-semibold text-white whitespace-nowrap">
+                    {partnerName}がルームを開設しました！
+                </span>
+            </div>
+        </div>
+    );
+}
+
+/* ── Gender Toggle (dev) ── */
+
+function GenderToggle() {
+    const gender = useAppStore((s) => s.gender);
+    const setGender = useAppStore((s) => s.setGender);
+
+    return (
+        <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">デモ:</span>
+            <button
+                onClick={() => { setGender("male"); useAppStore.setState({ isTakeover: false }); }}
+                className={cn(
+                    "px-3 py-1 rounded-full border transition-all text-xs font-medium",
+                    gender === "male"
+                        ? "bg-tp-accent/15 border-tp-accent text-tp-accent"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                )}
+            >
+                ♂ 男性
+            </button>
+            <button
+                onClick={() => { setGender("female"); useAppStore.setState({ isTakeover: false }); }}
+                className={cn(
+                    "px-3 py-1 rounded-full border transition-all text-xs font-medium",
+                    gender === "female"
+                        ? "bg-rose-400/15 border-rose-400 text-rose-400"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                )}
+            >
+                ♀ 女性
+            </button>
         </div>
     );
 }
@@ -279,7 +381,54 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 
 export default function LogPage() {
     const chatHistories = useAppStore((s) => s.chatHistories);
+    const gender = useAppStore((s) => s.gender);
+    const isTakeover = useAppStore((s) => s.isTakeover);
+    const activateTakeover = useAppStore((s) => s.activateTakeover);
     const hydrated = useHydrated();
+    const chatEndRef = useRef<HTMLDivElement>(null);
+    const [showFlash, setShowFlash] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [femaleInputReady, setFemaleInputReady] = useState(false);
+
+    const scrollToBottom = useCallback(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, []);
+
+    // Auto-add messages every 5-12 seconds & bump intimacy (only while AI mode)
+    useChatSimulation(isTakeover ? "__disabled__" : "sato", scrollToBottom);
+
+    // Auto-scroll when new messages arrive
+    const chat: ChatHistory | undefined = chatHistories[0];
+    const messageCount = chat?.messages.length ?? 0;
+    useEffect(() => {
+        if (messageCount > 0) scrollToBottom();
+    }, [messageCount, scrollToBottom]);
+
+    // Female mock: simulate partner takeover after 8 seconds
+    useEffect(() => {
+        if (gender !== "female" || isTakeover) return;
+        const timer = setTimeout(() => {
+            activateTakeover();
+            setShowToast(true);
+            setTimeout(() => setFemaleInputReady(true), 800);
+        }, 8000);
+        return () => clearTimeout(timer);
+    }, [gender, isTakeover, activateTakeover]);
+
+    // Reset local UI state when gender changes
+    useEffect(() => {
+        setShowFlash(false);
+        setFemaleInputReady(false);
+        setShowToast(false);
+    }, [gender]);
+
+    const handleMaleTakeover = () => {
+        setShowFlash(true);
+        setTimeout(() => {
+            activateTakeover();
+            setShowFlash(false);
+        }, 800);
+    };
 
     if (!hydrated) {
         return (
@@ -288,9 +437,6 @@ export default function LogPage() {
             </div>
         );
     }
-
-    // Use the first chat history (佐藤さん)
-    const chat: ChatHistory | undefined = chatHistories[0];
 
     if (!chat) {
         return (
@@ -303,12 +449,28 @@ export default function LogPage() {
 
     return (
         <div className="animate-page-in flex flex-col gap-5">
+            {/* ── Flash overlay ── */}
+            {showFlash && (
+                <div className="fixed inset-0 z-[9999] bg-white tp-flash-overlay pointer-events-none" />
+            )}
+
+            {/* ── Toast ── */}
+            {showToast && (
+                <TakeoverToast
+                    partnerName={chat.partnerName}
+                    onDone={() => setShowToast(false)}
+                />
+            )}
+
             {/* ── Header ── */}
-            <div className="space-y-1">
-                <h1 className="text-2xl font-bold tracking-tight">The Log</h1>
-                <p className="text-sm text-muted-foreground">
-                    AI同士の会話をリアルタイムで閲覧
-                </p>
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h1 className="text-2xl font-bold tracking-tight">The Log</h1>
+                    <p className="text-sm text-muted-foreground">
+                        {isTakeover ? "生身の会話モード" : "AI同士の会話をリアルタイムで閲覧"}
+                    </p>
+                </div>
+                <GenderToggle />
             </div>
 
             {/* ── Intimacy Gauge Card ── */}
@@ -327,8 +489,13 @@ export default function LogPage() {
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-tp-accent" />
                     <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                        Conversation Log
+                        {isTakeover ? "Live Chat" : "Conversation Log"}
                     </span>
+                    {isTakeover && (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                            Live
+                        </span>
+                    )}
                 </div>
                 <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                     <span>最新</span>
@@ -341,14 +508,34 @@ export default function LogPage() {
                 {chat.messages.map((msg) => (
                     <ChatBubble key={msg.id} message={msg} />
                 ))}
+                <div ref={chatEndRef} />
             </div>
 
             {/* ── Spacer ── */}
             <div className="h-4" />
 
-            {/* ── TAKEOVER Button ── */}
-            <div className="sticky bottom-[72px] lg:bottom-4 z-40 pb-1">
-                <TakeoverButton />
+            {/* ── Bottom Action Area ── */}
+            <div className="sticky bottom-[72px] lg:bottom-4 z-40 pb-1 space-y-3">
+                {/* Male: TAKEOVER button or input */}
+                {gender === "male" && !isTakeover && (
+                    <TakeoverButton onComplete={handleMaleTakeover} />
+                )}
+                {gender === "male" && isTakeover && (
+                    <ChatInputForm partnerName={chat.partnerName} />
+                )}
+
+                {/* Female: Waiting message */}
+                {gender === "female" && !isTakeover && (
+                    <div className="flex items-center justify-center gap-2 py-4 px-5 rounded-2xl border border-border bg-card">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                        <span className="text-xs text-muted-foreground">
+                            お相手からのアプローチ（TAKEOVER）をお待ちください
+                        </span>
+                    </div>
+                )}
+                {gender === "female" && isTakeover && femaleInputReady && (
+                    <ChatInputForm partnerName={chat.partnerName} />
+                )}
             </div>
         </div>
     );

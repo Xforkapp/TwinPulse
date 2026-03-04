@@ -11,6 +11,8 @@ export type SliderValues = {
     sharpness: number;  // 控えめ ⇔ 毒舌
 };
 
+export type Gender = "male" | "female";
+
 export type CurrentUserAI = {
     sliders: SliderValues;
     ngKeywords: string[];
@@ -216,6 +218,8 @@ type AppState = {
     currentUserAI: CurrentUserAI;
     activityLogs: ActivityLog[];
     chatHistories: ChatHistory[];
+    gender: Gender;
+    isTakeover: boolean;
 
     // Actions — currentUserAI
     setSliderValue: (key: keyof SliderValues, value: number) => void;
@@ -228,6 +232,10 @@ type AppState = {
     // Actions — chatHistories
     addMessage: (partnerId: string, message: Omit<ChatMessage, "id">) => void;
     setIntimacyScore: (partnerId: string, score: number) => void;
+
+    // Actions — takeover
+    setGender: (gender: Gender) => void;
+    activateTakeover: () => void;
 };
 
 /* ═══════════════════════════════════════════
@@ -241,6 +249,8 @@ export const useAppStore = create<AppState>()(
             currentUserAI: initialUserAI,
             activityLogs: initialActivityLogs,
             chatHistories: initialChatHistories,
+            gender: "male" as Gender,
+            isTakeover: false,
 
             /* ── currentUserAI actions ── */
             setSliderValue: (key, value) =>
@@ -328,6 +338,10 @@ export const useAppStore = create<AppState>()(
                             : h
                     ),
                 })),
+
+            /* ── takeover actions ── */
+            setGender: (gender) => set({ gender }),
+            activateTakeover: () => set({ isTakeover: true }),
         }),
         {
             name: "twinpulse-storage",

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAppStore, type ActivityLog } from "@/store";
 import { useHydrated } from "@/store/useHydrated";
+import { useActivitySimulation } from "@/store/simulation";
 
 /* ── Icon resolver ── */
 
@@ -32,6 +33,9 @@ export default function HomePage() {
     const activityLogs = useAppStore((s) => s.activityLogs);
     const chatHistories = useAppStore((s) => s.chatHistories);
     const hydrated = useHydrated();
+
+    // Auto-generate activity events every 15-30 seconds
+    useActivitySimulation();
 
     const activeAgents = 2;
     const totalAgents = 5;

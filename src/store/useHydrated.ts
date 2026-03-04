@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/store";
-import type { StoreApi, UseBoundStore } from "zustand";
 
 /**
  * A hydration-safe hook for Zustand stores with `persist` middleware.
