@@ -220,6 +220,7 @@ type AppState = {
     chatHistories: ChatHistory[];
     gender: Gender;
     isTakeover: boolean;
+    syncRate: number;
 
     // Actions — currentUserAI
     setSliderValue: (key: keyof SliderValues, value: number) => void;
@@ -236,6 +237,9 @@ type AppState = {
     // Actions — takeover
     setGender: (gender: Gender) => void;
     activateTakeover: () => void;
+
+    // Actions — training
+    setSyncRate: (rate: number) => void;
 };
 
 /* ═══════════════════════════════════════════
@@ -251,6 +255,7 @@ export const useAppStore = create<AppState>()(
             chatHistories: initialChatHistories,
             gender: "male" as Gender,
             isTakeover: false,
+            syncRate: 45,
 
             /* ── currentUserAI actions ── */
             setSliderValue: (key, value) =>
@@ -342,6 +347,9 @@ export const useAppStore = create<AppState>()(
             /* ── takeover actions ── */
             setGender: (gender) => set({ gender }),
             activateTakeover: () => set({ isTakeover: true }),
+
+            /* ── training actions ── */
+            setSyncRate: (rate) => set({ syncRate: Math.min(99, Math.max(0, rate)) }),
         }),
         {
             name: "twinpulse-storage",

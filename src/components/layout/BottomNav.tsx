@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MessageSquare, SlidersHorizontal } from "lucide-react";
+import { Home, MessageSquare, SlidersHorizontal, Dna } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
     { href: "/home", label: "ホーム", icon: Home },
     { href: "/log", label: "チャット", icon: MessageSquare },
+    { href: "/training", label: "育成", icon: Dna },
     { href: "/tuning", label: "チューニング", icon: SlidersHorizontal },
 ];
 
